@@ -19,7 +19,7 @@ HOST_INTRO = """
 """
 
 # ====================  API 配置 ====================
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "sk-nCVaRb2Bn1Z242lE88511eD5C864467dB81791D4991780Dd")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
 LLM_API_URL = "https://aihubmix.com/v1"
 
