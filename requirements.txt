@@ -1,0 +1,30 @@
+# 抖音直播AI回复系统依赖列表
+# Douyin Live AI Reply System Dependencies
+
+# HTTP请求库
+requests==2.31.0
+
+# WebSocket客户端库
+websocket-client==1.6.1
+
+# JavaScript执行引擎（用于签名算法）
+PyExecJS==1.5.1
+
+# Protocol Buffers库（用于解析抖音协议）
+# 使用较低版本以确保与生成的douyin_pb2.py文件兼容
+protobuf==4.21.12
+
+# 文本转语音库（用于AI配音）
+pyttsx3==2.90
+
+# RAG相关依赖
+chromadb==0.4.24
+sentence-transformers==2.6.0
+numpy<2.0.0  # 修复与 ChromaDB 的兼容性问题
+
+# 其他可能需要的标准库组件
+# logging, os, json, typing, ssl, traceback 等都是标准库，不需要安装
+
+gtts
+playsound==1.2.2
+openai

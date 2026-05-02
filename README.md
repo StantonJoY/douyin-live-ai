@@ -1,27 +1,5 @@
 # 抖音直播弹幕 AI 智能回复助手
 
-> 实时采集抖音直播间弹幕，使用 DeepSeek AI 分析用户意图并生成个性化回复建议，帮助主播高效互动。
-
-![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)
-![Node.js](https://img.shields.io/badge/Node.js-Required-green.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![WorkBuddy Skill](https://img.shields.io/badge/WorkBuddy-Skill-purple.svg)
-
----
-
-## ✨ 功能特性
-
-| 功能 | 说明 |
-|------|------|
-| 🔴 **实时弹幕采集** | 通过 WebSocket 直连抖音直播服务器，毫秒级获取弹幕 |
-| 🤖 **AI 智能回复** | 接入 DeepSeek API，深度分析意图，生成贴近人设的回复 |
-| 💾 **智能缓存** | LRU 缓存最近 100 条回复，相同问题直接命中，节省 API 费用 |
-| 🎭 **多场景适配** | 支持电商、教育、游戏、娱乐等多种直播类型，自动切换话术风格 |
-| 🔄 **自动重连** | 网络波动自动恢复，支持无人值守长时间运行 |
-| 🚫 **智能过滤** | 自动过滤无效弹幕、灌水内容、指定用户/关键词 |
-
----
-
 ## 🖥️ 效果预览
 
 ```
@@ -42,49 +20,7 @@ DeepSeek AI回复: @嘦姕 朋友好眼力！龙女确实改版了，
 
 > `[API]` 表示实时调用生成，`[缓存]` 表示命中本地缓存
 
----
-
-## 📋 适用场景
-
-- **🛒 电商直播** — 自动回复价格、质量、发货等买家咨询，引导下单
-- **📚 教育直播** — 专业解答学习、育儿、技能提升类问题
-- **🎮 游戏直播** — 回应英雄技巧、出装思路、版本强势等游戏问题
-- **💡 知识分享** — 应对观众提问，保持互动热度
-- **🎤 娱乐直播** — 活跃弹幕氛围，提升用户粘性
-
----
-
 ## 🚀 快速开始
-
-### 方式一：作为 WorkBuddy Skill 使用（推荐）
-
-1. 下载 `douyin-live-ai.zip`
-2. 在 WorkBuddy 中安装 Skill：将 zip 解压到 `~/.workbuddy/skills/douyin-live-ai/`
-3. 在对话中输入：
-
-```
-@skill://douyin-live-ai https://live.douyin.com/你的直播间ID
-```
-
-### 方式二：独立运行
-
-**克隆仓库**
-
-```bash
-git clone https://github.com/your-username/douyin-live-ai.git
-cd douyin-live-ai/scripts
-```
-
-**安装依赖**
-
-```bash
-# Python 依赖
-pip install websocket-client requests execjs protobuf
-
-# 确保已安装 Node.js
-node --version
-```
-
 **配置参数**
 
 编辑 `scripts/config.py`：
@@ -112,9 +48,6 @@ DEEPSEEK_API_KEY = "your_deepseek_api_key_here"
 **启动程序**
 
 ```bash
-# Windows 双击或命令行运行（自动设置 UTF-8 编码）
-start.bat
-
 # 或手动启动基础版
 python main.py
 
@@ -165,10 +98,6 @@ MIN_MESSAGE_LENGTH = 2
 
 ```
 douyin-live-ai/
-├── SKILL.md                      # WorkBuddy Skill 描述文件
-├── start.bat                     # Windows 一键启动脚本（含 UTF-8 设置）
-├── references/
-│   └── prompts.md               # AI 提示词设计参考
 └── scripts/
     ├── main.py                  # 程序入口（基础版）
     ├── main_with_reconnect.py   # 程序入口（自动重连版）
@@ -192,37 +121,6 @@ douyin-live-ai/
 | `ai_replies.jsonl` | 所有 AI 回复记录（含时间戳、用户名、弹幕、回复） |
 | `danmu_cache.jsonl` | 弹幕缓存持久化文件 |
 
----
-
-## 🔧 常见问题
-
-**Q: 提示 `'gbk' codec can't encode character`**
-
-A: Windows 终端默认 GBK 编码，请使用 `start.bat` 启动（已内置 `chcp 65001` 切换 UTF-8）。
-
-**Q: 程序运行一段时间后自动断开**
-
-A: 这是正常现象，抖音服务器会主动关闭空闲连接。请使用 `main_with_reconnect.py`，它会自动重连，最多重试 100 次。
-
-**Q: 没有弹幕输出**
-
-A: 请确认：① 直播间 ID 正确 ② 目标直播间正在直播 ③ 网络连接正常。
-
-**Q: AI 回复很慢或超时**
-
-A: 检查网络是否能访问 `api.deepseek.com`。可适当降低 `MAX_TOKENS` 值加快响应速度。
-
-**Q: 如何获取直播间 ID？**
-
-A: 打开抖音直播间，浏览器地址栏 URL 末尾的数字即为 ID：
-```
-https://live.douyin.com/349873582969
-                        ^^^^^^^^^^^^
-                        这串数字就是 ROOM_ID
-```
-
----
-
 ## 📦 依赖列表
 
 | 依赖 | 版本要求 | 用途 |
@@ -233,20 +131,3 @@ https://live.douyin.com/349873582969
 | requests | - | HTTP 请求 |
 | PyExecJS | - | 调用 JS 签名脚本 |
 | protobuf | - | 解析抖音 Protobuf 消息 |
-
-```bash
-pip install websocket-client requests PyExecJS protobuf
-```
-
----
-
-## 📄 许可证
-
-MIT License — 本项目仅供学习与技术交流使用，请勿用于任何商业或违法用途。
-
----
-
-## 🙏 致谢
-
-- [DeepSeek](https://platform.deepseek.com) — 提供强大的 AI API 支持
-- [WorkBuddy](https://www.codebuddy.cn) — Skill 插件体系支持

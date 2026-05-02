@@ -2,59 +2,108 @@
 DeepSeek AI 回复生成器
 调用 DeepSeek API 根据主播简介和用户聊天内容生成回复
 """
+from typing import Dict
 import json
-import requests
-from typing import Dict, Optional
+import os
 from config import (
-    DEEPSEEK_API_KEY,
-    DEEPSEEK_API_URL,
-    DEEPSEEK_MODEL,
-    TEMPERATURE,
-    MAX_TOKENS,
+    LLM_API_KEY, 
+    LLM_API_URL, 
+    LLM_MODEL, 
     HOST_NAME,
     HOST_INTRO,
-    HOST_PERSONA,
-    REPLY_STYLE
 )
 
+# 全局TTS引擎实例
+tts_engine = None
 
-def create_system_prompt() -> str:
+def load_qa_context(file_path=None):
     """
-    创建系统提示词，告诉 AI 主播的背景和回复风格
+    加载KB.md文件内容作为上下文
     """
-    style_desc = {
-        "professional": "专业严谨",
-        "friendly": "亲切友好",
-        "humorous": "幽默风趣"
-    }.get(REPLY_STYLE, "亲切友好")
+    if file_path is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "..", "references", "KB.md")
     
-    return f"""你是{HOST_NAME}的直播助手，正在帮助回复抖音直播间的观众弹幕。
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content
+    except FileNotFoundError:
+        print(f"警告: 未找到文件 {file_path}，将使用基础提示。")
+        return ""
+    except Exception as e:
+        print(f"加载KB文件出错: {e}，将使用基础提示。")
+        return ""
 
-【主播简介】
-{HOST_INTRO}
+def generate_prompt(query: str) -> str:
+    """
+    生成包含QA知识库上下文的提示
+    """
+    # 加载知识库上下文
+    qa_context = load_qa_context()
+    
+    # 主播信息
+    host_info = f"主播姓名: {HOST_NAME}\n主播介绍: {HOST_INTRO}\n" if HOST_NAME and HOST_INTRO else ""
+    
+    # 构建完整的提示
+    if qa_context:
+        prompt = f"""你是抖音直播间的主播助手，负责根据用户的问题生成自然、贴切的回答。请参考以下信息：
 
-【主播人设】
-{HOST_PERSONA}
+        {host_info}
+        知识库信息：
+        {qa_context}
 
-【回复风格】
-{style_desc}
+        用户刚刚说了："{query}"
 
-【回复要求】
-1. 用第一人称"我"来回复，让观众感觉是在和主播直接交流
-2. 称呼观众为"朋友"、"家长"或直接用"@用户名"
-3. 回复要有温度，体现主播的专业性和亲和力
-4. 如果是书籍相关问题，可以自然推荐相关书籍
-5. 如果是育儿问题，给出具体可行的建议
-6. 回复控制在100字以内，简洁有力
-7. 不要出现"AI"、"机器人"等字眼
-8. 回复要自然，像真人说话一样
+        请根据以上知识库信息和主播信息，生成回答。如果知识库中有相关内容，请优先参考；如果没有，则根据主播的人设和直播场景生成合适的回答。
+        回答要求：
+        1. 请注意回答中不要有表情和不必要的符号，因为会用于朗读
+        2. 不要书面语，表达亲切口语化
+        3. 直接回答关键信息，10-20字
+        4. 称呼客户为老板
+        """
+    else:
+        # 如果没有知识库，只使用基本的上下文
+        prompt = f"""你是抖音直播间的主播助手，负责根据用户的问题生成自然、贴切的回答。
+        {host_info}
+        用户刚刚说了："{query}"
+        请根据主播的人设和直播场景生成合适的回答。请注意回答中不要有表情和不必要的符号，因为会用于朗读"""
+    
+    return prompt
 
-请直接给出回复内容，不要加任何解释。"""
+
+def speak_reply(text: str):
+    """
+    使用文本转语音(TTS)技术朗读AI回复
+    
+    Args:
+        text: 要朗读的文本
+    """
+    try:
+        import config
+        from gtts import gTTS
+        from playsound import playsound
+        import os
+        if not config.USE_TTS:
+            return
+
+        # 生成临时音频文件
+        tmp_filename = "tmp.mp3"
+        tts = gTTS(text, lang='zh-CN')
+        tts.save(tmp_filename)
+        playsound(tmp_filename)
+        
+        # 播放完成后删除临时文件
+        if os.path.exists(tmp_filename):
+            os.remove(tmp_filename)
+        
+    except Exception as e:
+        print(f"语音播报失败: {e}")
 
 
 def generate_reply(user_name: str, user_message: str) -> Dict:
     """
-    生成回复，优先使用缓存，没有则调用 DeepSeek API
+    生成回复，优先使用缓存，最后调用 DeepSeek API
     
     Args:
         user_name: 用户名
@@ -84,66 +133,39 @@ def generate_reply(user_name: str, user_message: str) -> Dict:
             'from_cache': True,
             'error': None
         }
-    
-    # 缓存未命中，调用API
+  
     try:
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
-        }
-        
-        messages = [
-            {
-                "role": "system",
-                "content": create_system_prompt()
-            },
-            {
-                "role": "user",
-                "content": f'观众"{user_name}"发了一条弹幕："{user_message}"\n\n请帮我回复这条弹幕：'
-            }
-        ]
-        
-        payload = {
-            "model": DEEPSEEK_MODEL,
-            "messages": messages,
-            "temperature": TEMPERATURE,
-            "max_tokens": MAX_TOKENS,
-            "stream": False
-        }
-        
-        response = requests.post(
-            DEEPSEEK_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=30
+        import openai
+        client = openai.OpenAI(
+        api_key=LLM_API_KEY,
+        base_url=LLM_API_URL
         )
+
+        # 使用新实现的generate_prompt函数
+        prompt = generate_prompt(user_message)
         
-        if response.status_code == 200:
-            result = response.json()
-            reply = result['choices'][0]['message']['content'].strip()
-            
-            # 缓存新回复
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            cache_reply(user_message, reply, timestamp)
-            
-            return {
-                'user_name': user_name,
-                'user_message': user_message,
-                'reply': reply,
-                'success': True,
-                'from_cache': False,
-                'error': None
-            }
-        else:
-            return {
-                'user_name': user_name,
-                'user_message': user_message,
-                'reply': None,
-                'success': False,
-                'from_cache': False,
-                'error': f"API错误: {response.status_code} - {response.text}"
-            }
-            
+        response = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[
+            {"role": "user",
+             "content": prompt}
+        ]
+        )
+        reply = response.choices[0].message.content
+
+        # 缓存新回复
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cache_reply(user_message, reply, timestamp)
+        
+        return {
+            'user_name': user_name,
+            'user_message': user_message,
+            'reply': reply,
+            'success': True,
+            'from_cache': False,
+            'error': None
+        }
+
     except Exception as e:
         return {
             'user_name': user_name,
@@ -154,11 +176,40 @@ def generate_reply(user_name: str, user_message: str) -> Dict:
             'error': str(e)
         }
 
+def generate_stub_reply(user_name: str, user_message: str) -> Dict:
+    """
+    Stub 版本的回复生成函数，不调用 DeepSeek API，也不做缓存
+    直接返回固定回复
+    
+    Args:
+        user_name: 用户名
+        user_message: 用户消息内容
+        
+    Returns:
+        {
+            'user_name': str,
+            'user_message': str,
+            'reply': str,
+            'success': bool,
+            'from_cache': bool,  # 是否来自缓存
+            'error': str (如果失败)
+        }
+    """
+    # Stub 方法，直接返回固定回复
+    return {
+        'user_name': user_name,
+        'user_message': user_message,
+        'reply': "蓝莓30元一斤",
+        'success': True,
+        'from_cache': False,  # Stub 方法不使用缓存
+        'error': None
+    }
+
+
 
 def test_deepseek():
     """测试 DeepSeek API (带缓存)"""
     print("正在测试 DeepSeek API (带缓存)...")
-    print(f"主播: {HOST_NAME}")
     print("-" * 60)
     
     # 测试消息

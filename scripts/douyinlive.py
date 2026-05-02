@@ -284,7 +284,7 @@ class DouYinLive:
 
     def parseChatMsg(self, payload):
         """聊天消息 - 调用DeepSeek AI生成回复"""
-        from deepseek_ai import generate_reply
+        from deepseek_ai import generate_reply, generate_stub_reply, speak_reply
         from config import IGNORED_USERS, IGNORED_KEYWORDS, MIN_MESSAGE_LENGTH, REPLY_FILE
         import json
         from datetime import datetime
@@ -332,6 +332,9 @@ class DouYinLive:
             print(f"-"*60)
             print(f"DeepSeek AI回复: {result['reply']}")
             print(f"{'='*60}")
+            
+            # 使用TTS朗读AI回复
+            speak_reply(result['reply'])
 
     def parseGiftMsg(self, payload):
         """礼物消息 - 忽略不显示"""
