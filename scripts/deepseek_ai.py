@@ -81,21 +81,42 @@ def speak_reply(text: str):
     """
     try:
         import config
-        from gtts import gTTS
+        import dashscope
+        import requests
         from playsound import playsound
+        import tempfile
         import os
+        
         if not config.USE_TTS:
             return
 
-        # 生成临时音频文件
-        tmp_filename = "tmp.mp3"
-        tts = gTTS(text, lang='zh-CN')
-        tts.save(tmp_filename)
-        playsound(tmp_filename)
+        response = dashscope.MultiModalConversation.call(
+            model="qwen3-tts-flash",
+            api_key=config.DASHSCOPE_API_KEY,
+            text=text,
+            voice="Cherry"
+        )
         
-        # 播放完成后删除临时文件
-        if os.path.exists(tmp_filename):
-            os.remove(tmp_filename)
+        if response.status_code == 200:
+            # 获取音频URL
+            audio_url = response.output.audio.url
+            
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                temp_path = temp_file.name
+            
+            # 下载音频到临时文件
+            audio_data = requests.get(audio_url).content
+            with open(temp_path, "wb") as f:
+                f.write(audio_data)
+            
+            # 播放音频
+            playsound(temp_path)
+            
+            # 清理临时文件
+            os.unlink(temp_path)
+        else:
+            print(f"语音合成失败")
         
     except Exception as e:
         print(f"语音播报失败: {e}")

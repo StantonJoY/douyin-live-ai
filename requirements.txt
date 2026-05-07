@@ -1,6 +1,5 @@
 # 抖音直播AI回复系统依赖列表
 # Douyin Live AI Reply System Dependencies
-
 # HTTP请求库
 requests==2.31.0
 
@@ -19,3 +18,5 @@ pyttsx3==2.90
 gtts
 playsound==1.2.2
 openai
+
+dashscope

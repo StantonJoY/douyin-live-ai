@@ -5,8 +5,10 @@
 import os
 
 # ==================== 直播间配置 ====================
-# 抖音直播间ID（URL最后的数字，如 https://live.douyin.com/349873582969）
-ROOM_ID = "444109467716"
+# 乐享
+# ROOM_ID = "444109467716"
+# 本人
+ROOM_ID = "191649795431" 
 
 
 
@@ -19,7 +21,10 @@ HOST_INTRO = """
 """
 
 # ====================  API 配置 ====================
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "sk-7YtQkgQYZTiKAkP094Df994cF4974bC59a4aD1D40119Da63")
+
+DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "sk-b16b1cece8784dc68d4d1bcd57caf2cf")
+DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1'
 
 LLM_API_URL = "https://aihubmix.com/v1"
 
