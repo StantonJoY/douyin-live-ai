@@ -3,6 +3,9 @@ import logging
 import re
 import ssl
 import traceback
+import time
+from collections import deque
+import threading
 
 import execjs
 import requests
@@ -45,7 +48,13 @@ class DouYinLive:
             "__ac_nonce": "0683ab03200786e902e82"
         }
         self.url = f"https://live.douyin.com/{room_uid}"
-        self.ws = ''
+        self.ws = None
+        self.message_queue = deque()  # 消息队列
+        self.is_running = False       # 控制运行状态
+        self.last_heartbeat = time.time()  # 上次心跳时间
+        
+        # 消息处理线程
+        self.processing_thread = None
 
     def start(self):
         room_id, ttwid = self.get_room_id()
@@ -203,12 +212,27 @@ class DouYinLive:
                                          on_error=self.on_error,
                                          on_close=self.on_close)
 
-        self.ws.run_forever(sslopt={'cert_reqs': ssl.CERT_NONE})
+        # 启动主循环而不是run_forever
+        self.is_running = True
+        
+        # 启动消息处理线程
+        self.processing_thread = threading.Thread(target=self.process_messages)
+        self.processing_thread.daemon = True
+        self.processing_thread.start()
+        
+        # 使用一个线程来运行WebSocket，主循环在当前线程中
+        ws_thread = threading.Thread(target=self.ws.run_forever, kwargs={'sslopt':{'cert_reqs': ssl.CERT_NONE}})
+        ws_thread.daemon = True
+        ws_thread.start()
+        
+        # 启动主循环
+        self.run_main_loop()
 
     def on_error(self, ws, error):
         pass  # 隐藏错误日志
 
     def on_close(self, ws, close_status_code, close_msg):
+        self.is_running = False
         print("\n[系统] 连接已关闭")
 
     def on_open(self, ws):
@@ -232,60 +256,80 @@ class DouYinLive:
                             payload_type='ack').SerializeToString()
             ws.send(ack, websocket.ABNF.OPCODE_BINARY)
 
+        # 将消息放入队列而不是立即处理
         for msg in response.messages:
             method = msg.method
-            handlers = {
-                # 普通文字聊天消息（观众发送的弹幕）
-                'WebcastChatMessage': self.parseChatMsg,
+            # 添加消息到队列，包含接收时间戳
+            self.message_queue.append({
+                'method': method,
+                'payload': msg.payload,
+                'timestamp': time.time()
+            })
 
-                # 送礼物消息（包含礼物信息、赠送者、数量等）
-                'WebcastGiftMessage': self.parseGiftMsg,
-                #
-                # 点赞消息（用户点击“点赞”按钮）
-                'WebcastLikeMessage': self.parseLikeMsg,
-                # 用户进入直播间的消息
-                'WebcastMemberMessage': self.parseMemberMsg,
+    def process_messages(self):
+        """消息处理线程 - 专门处理消息队列中的消息"""
+        while self.is_running:
+            try:
+                if self.message_queue:
+                    # 取出队列头部的消息
+                    msg_data = self.message_queue.popleft()
+                    method = msg_data['method']
+                    payload = msg_data['payload']
+                    timestamp = msg_data['timestamp']
+                    
+                    # 检查消息是否超时（超过60秒）
+                    if time.time() - timestamp > 60:
+                        logging.info(f"跳过超时消息: {method}, 延迟: {time.time() - timestamp:.2f}s")
+                        continue
 
-                # 社交互动消息（如关注主播）
-                'WebcastSocialMessage': self.parseSocialMsg,
+                    handlers = {
+                        # 普通文字聊天消息（观众发送的弹幕）
+                        'WebcastChatMessage': self.parseChatMsg,
+                        # 送礼物消息（包含礼物信息、赠送者、数量等）
+                        'WebcastGiftMessage': self.parseGiftMsg,
+                        #
+                        # 直播间流配置适配信息（用于调节直播流质量等）
+                        'WebcastRoomStreamAdaptationMessage': self.parseRoomStreamAdaptationMsg,
+                    }
 
-                # 房间用户排序信息（可能用于显示“本场贡献榜”）
-                'WebcastRoomUserSeqMessage': self.parseRoomUserSeqMsg,
+                    handler = handlers.get(method)
+                    if handler:
+                        try:
+                            handler(payload)
+                        except Exception as e:
+                            logging.error(f"处理消息时出错 {method}: {str(e)}")
+                else:
+                    # 如果队列为空，短暂休眠
+                    time.sleep(0.01)
+            except Exception as e:
+                logging.error(f"消息处理线程异常: {str(e)}")
+                time.sleep(0.01)
 
-                # 粉丝团相关消息（用户加入粉丝团、等级提升等）
-                'WebcastFansclubMessage': self.parseFansclubMsg,
+    def maintain_heartbeat(self):
+        """维护心跳连接"""
+        # 每10秒检查一次
+        if time.time() - self.last_heartbeat > 10:
+            # 尝试发送心跳，如果ws连接可用
+            try:
+                if self.ws and self.ws.sock and self.ws.sock.connected:
+                    self.ws.sock.ping()
+            except Exception as e:
+                logging.warning(f"心跳发送失败: {str(e)}")
+            self.last_heartbeat = time.time()
 
-                # 控制消息（如直播暂停、关闭、权限控制等）
-                'WebcastControlMessage': self.parseControlMsg,
-
-                # 表情聊天消息（用户发送表情包而非文字）
-                'WebcastEmojiChatMessage': self.parseEmojiChatMsg,
-
-                # 直播间实时统计数据（在线人数、热度等）
-                'WebcastRoomStatsMessage': self.parseRoomStatsMsg,
-
-                # 房间基本信息消息（直播间名称、状态等）
-                'WebcastRoomMessage': self.parseRoomMsg,
-
-                # 排行榜信息消息（如打赏排行榜、活跃用户榜等）
-                'WebcastRoomRankMessage': self.parseRankMsg,
-
-                # 直播间流配置适配信息（用于调节直播流质量等）
-                'WebcastRoomStreamAdaptationMessage': self.parseRoomStreamAdaptationMsg,
-            }
-
-            handler = handlers.get(method)
-            if handler:
-                handler(msg.payload)
-            else:
-                # 处理没有找到对应方法的情况，比如日志
-                # logging.warning(f"No handler found for method: {method}")
-                pass
+    def run_main_loop(self):
+        """主循环 - 仅维护心跳和监控连接状态"""
+        while self.is_running:
+            # 维护心跳
+            self.maintain_heartbeat()
+            
+            # 短暂休眠，释放CPU资源
+            time.sleep(0.01)
 
     def parseChatMsg(self, payload):
         """聊天消息 - 调用DeepSeek AI生成回复"""
         from deepseek_ai import generate_reply, generate_stub_reply, speak_reply
-        from config import IGNORED_USERS, IGNORED_KEYWORDS, MIN_MESSAGE_LENGTH, REPLY_FILE
+        from config import IGNORED_USERS, IGNORED_KEYWORDS, MIN_MESSAGE_LENGTH, REPLY_FILE, USE_API_REPLY
         import json
         from datetime import datetime
 
@@ -312,7 +356,10 @@ class DouYinLive:
                 return
 
         # 调用 DeepSeek AI 生成回复
-        result = generate_reply(user_name, content)
+        if USE_API_REPLY:
+            result = generate_reply(user_name, content)
+        else:
+            result = generate_stub_reply(user_name, content)
 
         # 保存到回复记录
         if result['success']:
@@ -330,7 +377,7 @@ class DouYinLive:
             print(f"\n{'='*60}")
             print(f"[{reply_data['timestamp']}] {cache_status} {user_name}: {content}")
             print(f"-"*60)
-            print(f"DeepSeek AI回复: {result['reply']}")
+            print(f"AI回复: {result['reply']}")
             print(f"{'='*60}")
             
             # 使用TTS朗读AI回复
@@ -339,52 +386,7 @@ class DouYinLive:
     def parseGiftMsg(self, payload):
         """礼物消息 - 忽略不显示"""
         pass
-
-    def parseLikeMsg(self, payload):
-        """点赞消息 - 忽略不显示"""
-        pass
-
-    def parseMemberMsg(self, payload):
-        """进入直播间消息 - 忽略不显示"""
-        pass
-
-    def parseSocialMsg(self, payload):
-        """关注消息 - 忽略不显示"""
-        pass
-
-    def parseRoomUserSeqMsg(self, payload):
-        """直播间统计 - 忽略不显示"""
-        pass
-
-    def parseFansclubMsg(self, payload):
-        """粉丝团消息 - 忽略不显示"""
-        pass
-
-    def parseEmojiChatMsg(self, payload):
-        """聊天表情包消息 - 忽略不显示"""
-        pass
-
-    def parseRoomMsg(self, payload):
-        """直播间信息 - 忽略不显示"""
-        pass
-
-    def parseRoomStatsMsg(self, payload):
-        """直播间统计 - 忽略不显示"""
-        pass
-
-    def parseRankMsg(self, payload):
-        """直播间排行榜 - 忽略不显示"""
-        pass
-
-    def parseControlMsg(self, payload):
-        """直播间状态消息"""
-        message = ControlMessage()
-        message.ParseFromString(payload)
-
-        if message.status == 3:
-            logging.info("[系统] 直播间已结束")
-            self.on_close(ws=self.ws, close_msg='直播已结束', close_status_code=1000)
-
+  
     def parseRoomStreamAdaptationMsg(self, payload):
         """直播间流配置 - 忽略不显示"""
         pass

@@ -7,10 +7,11 @@ import os
 # ==================== 直播间配置 ====================
 # 乐享
 # ROOM_ID = "444109467716"
-# 本人
-ROOM_ID = "191649795431" 
-
-
+# 测试
+ROOM_ID = "836906580899"
+# 是否启用AI语音播报功能
+USE_TTS = False  # 设置为False可关闭语音功能
+USE_API_REPLY = False
 
 # ==================== 主播简介配置 ====================
 # 主播名称
@@ -21,9 +22,7 @@ HOST_INTRO = """
 """
 
 # ====================  API 配置 ====================
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "sk-7YtQkgQYZTiKAkP094Df994cF4974bC59a4aD1D40119Da63")
 
-DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "sk-b16b1cece8784dc68d4d1bcd57caf2cf")
 DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1'
 
 LLM_API_URL = "https://aihubmix.com/v1"
@@ -41,26 +40,9 @@ CACHE_FILE = os.path.join(_BASE_DIR, "danmu_cache.jsonl")
 # 回复记录文件路径
 REPLY_FILE = os.path.join(_BASE_DIR, "ai_replies.jsonl")
 
-# ==================== TTS 配置 ====================
-# 是否启用AI语音播报功能
-USE_TTS = True  # 设置为False可关闭语音功能
-
-
-# TTS语音引擎 (可选: 'sapi5' for Windows, 'nsss' for Mac, 'espeak' for Linux)
-TTS_ENGINE = 'sapi5'
-
-# 语音速度 (-10 to 10, 默认0)
-TTS_RATE = 2
-
-# 语音音量 (0.0 to 1.0, 默认1.0)
-TTS_VOLUME = 1.0
-
-# 语音音色索引 (0开始，具体取决于系统可用音色，默认为None自动选择中文音色)
-TTS_VOICE_INDEX = None
-
 # ==================== 过滤配置 ====================
 # 忽略的用户名列表 (如机器人、管理员)
-IGNORED_USERS = ["管理员", "系统消息"]
+IGNORED_USERS = ["管理员", "系统消息", "nn."]
 
 # 忽略的关键词 (如纯表情、无意义内容)
 IGNORED_KEYWORDS = ["666", "哈哈哈", "...", "???", "点点关注"]

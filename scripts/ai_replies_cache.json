@@ -262,5 +262,71 @@
     "ai_reply": "老板，露营免费，烧烤二十块一个人场地清洁费",
     "timestamp": "2026-05-06 20:49:27",
     "use_count": 1
+  },
+  "2ce7c8f8bad4665a500f1fa8c6f6e71f": {
+    "user_message": "开播要带卖，",
+    "ai_reply": "好的老板，马上边聊边带卖，蓝莓特惠快来抢",
+    "timestamp": "2026-05-07 15:31:13",
+    "use_count": 1
+  },
+  "a7dbf1ec8eb04a0561f51d85def5cc50": {
+    "user_message": "唱歌感觉就挺好",
+    "ai_reply": "谢谢老板夸奖，咱们唱歌采摘蓝莓更开心",
+    "timestamp": "2026-05-07 15:31:46",
+    "use_count": 1
+  },
+  "07adf3b4d58a272f2cb2fa6a456a2085": {
+    "user_message": "麒麟湾吗",
+    "ai_reply": "是的老板，就在麒麟湾生态园，乐享莓园",
+    "timestamp": "2026-05-07 20:24:53",
+    "use_count": 1
+  },
+  "5e3c1036b1804cb0fee463f12f898471": {
+    "user_message": "不远  可以自己摘的吗",
+    "ai_reply": "老板，咱家可以自己摘蓝莓，随便挑随便摘",
+    "timestamp": "2026-05-07 20:25:28",
+    "use_count": 1
+  },
+  "e1cf6f54a26ed2bc13e63ee7334d4cf0": {
+    "user_message": "58.8  3斤还是一个篮子随便装",
+    "ai_reply": "老板，那个58.8是按斤算的，不是随便装篮子。",
+    "timestamp": "2026-05-07 20:25:47",
+    "use_count": 1
+  },
+  "ffc7ccc759d449efd878d91e271ec9b5": {
+    "user_message": "挺好的",
+    "ai_reply": "谢谢老板喜欢，欢迎来园里摘蓝莓体验下",
+    "timestamp": "2026-05-07 20:26:56",
+    "use_count": 1
+  },
+  "5053fee16717e6f30cf90e85a35d020c": {
+    "user_message": "[害羞]中福袋了",
+    "ai_reply": "老板，福袋里面是125克蓝莓，现场来领取就行",
+    "timestamp": "2026-05-07 20:27:51",
+    "use_count": 1
+  },
+  "c87879456e95e533e96b22e3d2f7d2f2": {
+    "user_message": "58.8可以摘三斤吗",
+    "ai_reply": "老板，三斤蓝莓是99.9元，58.8不够的",
+    "timestamp": "2026-05-07 20:28:10",
+    "use_count": 1
+  },
+  "814da580333e59500894c2e719587969": {
+    "user_message": "58.8是三斤吗",
+    "ai_reply": "老板，三斤是99.9元哦",
+    "timestamp": "2026-05-07 20:28:20",
+    "use_count": 1
+  },
+  "ee41a66e3921f3c878d1c61eaa133a30": {
+    "user_message": "福袋是去现场吗",
+    "ai_reply": "Sorry, to prevent abuse of free resources, accounts that have not been recharged can only try 10 times. You can increase the free quota after recharging; https://console.aihubmix.com/topup",
+    "timestamp": "2026-05-07 20:28:26",
+    "use_count": 1
+  },
+  "c3b3e97e4d11e18833fa734c46a34874": {
+    "user_message": "58.8是三斤吗   你们摘好还是我们自己摘",
+    "ai_reply": "Sorry, to prevent abuse of free resources, accounts that have not been recharged can only try 10 times. You can increase the free quota after recharging; https://console.aihubmix.com/topup",
+    "timestamp": "2026-05-07 20:28:56",
+    "use_count": 1
   }
 }

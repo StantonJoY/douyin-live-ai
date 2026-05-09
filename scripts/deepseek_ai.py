@@ -119,7 +119,8 @@ def speak_reply(text: str):
             print(f"语音合成失败")
         
     except Exception as e:
-        print(f"语音播报失败: {e}")
+        # print(f"语音播报失败: {e}")
+        pass
 
 
 def generate_reply(user_name: str, user_message: str) -> Dict:
@@ -201,26 +202,12 @@ def generate_stub_reply(user_name: str, user_message: str) -> Dict:
     """
     Stub 版本的回复生成函数，不调用 DeepSeek API，也不做缓存
     直接返回固定回复
-    
-    Args:
-        user_name: 用户名
-        user_message: 用户消息内容
-        
-    Returns:
-        {
-            'user_name': str,
-            'user_message': str,
-            'reply': str,
-            'success': bool,
-            'from_cache': bool,  # 是否来自缓存
-            'error': str (如果失败)
-        }
     """
     # Stub 方法，直接返回固定回复
     return {
         'user_name': user_name,
         'user_message': user_message,
-        'reply': "蓝莓30元一斤",
+        'reply': "",
         'success': True,
         'from_cache': False,  # Stub 方法不使用缓存
         'error': None
